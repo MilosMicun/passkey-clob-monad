@@ -9,14 +9,43 @@ const DEMO_ORDER = Object.freeze({
 const LIVE_DEMO_MAKER_COUNT = 4
 const LIVE_DEMO_ACTIONS_PER_MAKER = 4
 const LIVE_DEMO_TOTAL_TRANSACTIONS = 16
-const IS_LOCAL_RUNTIME = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+let IS_INTERACTIVE_RUNTIME = false
+const VERIFIED_REPLAY_RESULTS = Object.freeze({
+  monad: Object.freeze({
+    completion: '0.95s',
+    throughput: '67.2 tx/s',
+    latency: '0.48s / 0.85s',
+    success: '64/64',
+  }),
+  sepolia: Object.freeze({
+    completion: '10.17s',
+    throughput: '6.29 tx/s',
+    latency: '9.90s / 10.17s',
+    success: '64/64',
+  }),
+})
 
-function initializeRuntimeMode() {
-  document.body.dataset.runtimeMode = IS_LOCAL_RUNTIME ? 'local' : 'public'
+async function detectInteractiveBackend() {
+  try {
+    const response = await fetch('./api/health', {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    })
+    if (!response.ok) return false
+    const health = await response.json()
+    return health.ok === true
+  } catch {
+    return false
+  }
+}
+
+function initializeRuntimeMode(interactive) {
+  IS_INTERACTIVE_RUNTIME = interactive
+  document.body.dataset.runtimeMode = interactive ? 'interactive' : 'public'
   const runButton = document.querySelector('#run-live-comparison')
   const showcaseBanner = document.querySelector('#public-showcase-banner')
 
-  if (IS_LOCAL_RUNTIME) {
+  if (interactive) {
     showcaseBanner.hidden = true
     runButton.disabled = false
     return
@@ -24,18 +53,41 @@ function initializeRuntimeMode() {
 
   showcaseBanner.hidden = false
   document.querySelector('#runtime-status-label').textContent = 'PUBLIC SHOWCASE'
-  document.querySelector('#live-run-state').textContent = 'LOCAL DEMO'
+  document.querySelector('#controller-mode-label').textContent = 'VERIFIED BENCHMARK REPLAY'
+  document.querySelector('#controller-transaction-label').textContent = 'STATIC · NO TRANSACTIONS'
+  document.querySelector('#hero-action-label').textContent = 'Verified quote-refresh'
+  document.querySelector('#hero-race-label').textContent = 'replay.'
+  document.querySelector('#controller-maker-count').textContent = '16'
+  document.querySelector('#controller-transaction-count').textContent = '64'
+  document.querySelector('#controller-transaction-kind').textContent = 'verified on-chain tx'
+  document.querySelector('.live-workload-facts').setAttribute('aria-label', 'Verified workload')
+  document.querySelector('.live-run-panel').setAttribute('aria-label', 'Verified benchmark replay')
+  document.querySelector('.passkey-control').setAttribute('aria-label', 'Passkey flow showcase')
+  document.querySelector('.site-footer > span').textContent = 'PUBLIC SHOWCASE · VERIFIED REPLAY'
+  document.querySelector('#controller-rpc-note').textContent =
+    'Presentation replay uses the verified 16-maker, 64-transaction result snapshot.'
+  document.querySelector('#run-panel-label').textContent = 'VERIFIED RUN REPLAY'
+  document.querySelector('#run-summary-label').textContent =
+    'VERIFIED RUN REPLAY — 16 MAKERS / 64 TX'
+  document.querySelector('#run-summary-caption').textContent = 'Observed in the verified on-chain run'
+  document.querySelectorAll('[data-run-lane-label]').forEach((label) => {
+    label.textContent = '16 concurrent maker lanes'
+  })
+  document.querySelector('#live-run-state').textContent = 'READY TO REPLAY'
   document.querySelector('#live-run-message').textContent =
-    'LIVE DURING PRESENTATION — verified full-benchmark results remain available below.'
+    'Replay the verified comparison below. The public site sends no transactions.'
   document.querySelectorAll('[data-live-status]').forEach((status) => {
-    status.textContent = 'PRESENTATION ONLY'
+    status.textContent = 'VERIFIED DATA'
   })
 
-  runButton.disabled = true
+  runButton.textContent = 'REPLAY VERIFIED BENCHMARK'
+  runButton.disabled = false
+  document.querySelector('#run-control-note').textContent =
+    'Verified run replay — no transactions are sent from the public site.'
   document.querySelector('#passkey-registration-status').textContent = 'PUBLIC SHOWCASE'
   document.querySelector('#passkey-registration-status').dataset.state = 'showcase'
   document.querySelector('#passkey-progress').textContent =
-    'DEVICE PASSKEY DEMO RUNS LOCALLY — no browser credential or backend connection is requested here.'
+    'Real device signing is demonstrated locally during the presentation.'
   document.querySelector('#create-passkey-button').disabled = true
   document.querySelector('#place-passkey-button').disabled = true
   document.querySelector('#cancel-passkey-button').disabled = true
@@ -317,7 +369,9 @@ function parseEcdsaSignature(signatureBuffer) {
 }
 
 async function apiRequest(path, { method = 'GET', body } = {}) {
-  if (!IS_LOCAL_RUNTIME) throw new Error('Interactive APIs are available only on localhost.')
+  if (!IS_INTERACTIVE_RUNTIME) {
+    throw new Error('Interactive APIs are unavailable without the same-origin demo backend.')
+  }
   const response = await fetch(path, {
     method,
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
@@ -390,10 +444,7 @@ function initializePasskeyControl() {
 
   function requireWebAuthn() {
     if (!window.isSecureContext || !window.PublicKeyCredential || !navigator.credentials) {
-      throw new Error('WebAuthn is unavailable. Open this demo at http://localhost:8080 in a supported browser.')
-    }
-    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      throw new Error('This demo only supports the localhost WebAuthn relying party.')
+      throw new Error('WebAuthn requires a supported browser on HTTPS or localhost.')
     }
   }
 
@@ -415,7 +466,7 @@ function initializePasskeyControl() {
     }
 
     if (activeDemoOrder && localStorage.getItem(CREDENTIAL_STORAGE_KEY)) {
-      setProgress('Active passkey demo order detected. Authorize cancellation to restore benchmark state.')
+      setProgress('Active passkey demo order detected. Authorize cancellation to release its collateral.')
     } else if (registeredOnChain && !localStorage.getItem(CREDENTIAL_STORAGE_KEY)) {
       setProgress('On-chain key found, but this browser has no matching credential ID. Create a new device passkey to replace it.')
     } else if (registeredOnChain) {
@@ -453,6 +504,16 @@ function initializePasskeyControl() {
         },
       })
       if (!credential || credential.type !== 'public-key') throw new Error('No WebAuthn credential was created.')
+      const registrationClientData = JSON.parse(
+        new TextDecoder('utf-8', { fatal: true }).decode(credential.response.clientDataJSON),
+      )
+      if (
+        registrationClientData.type !== 'webauthn.create' ||
+        registrationClientData.origin !== location.origin ||
+        registrationClientData.crossOrigin === true
+      ) {
+        throw new Error('WebAuthn registration origin does not match this demo.')
+      }
       if (typeof credential.response.getPublicKey !== 'function') {
         throw new Error('This browser cannot export the credential P-256 public key.')
       }
@@ -611,7 +672,7 @@ function initializePasskeyControl() {
       makerNonceLabel.textContent = cancellation.makerNonce
       cancelButton.hidden = true
       activeOrderPanel.hidden = true
-      setProgress('Passkey cancellation confirmed. Benchmark state restored ✓')
+      setProgress('Passkey cancellation confirmed. Demo order collateral released ✓')
       setBusy(false)
     } catch (error) {
       setProgress(error.message ?? 'Passkey cancellation failed.', true)
@@ -638,8 +699,6 @@ function initializeLiveBenchmarkController() {
   const completionSpeedup = document.querySelector('#live-completion-speedup')
   const throughputMultiple = document.querySelector('#live-throughput-multiple')
   if (!runButton || !message || !overallState) return
-
-  const results = {}
 
   function setMessage(text, isError = false) {
     message.textContent = text
@@ -674,58 +733,23 @@ function initializeLiveBenchmarkController() {
     setChainState(network, 'COMPLETE')
   }
 
-  async function runNetwork(network) {
-    setChainState(network, 'RUNNING', 'RUNNING...')
-    try {
-      const result = await apiRequest(`/api/benchmark/run/${network}`, { method: 'POST' })
-      results[network] = result
-      renderChainResult(network, result)
-      return result
-    } catch (error) {
-      setChainState(network, 'FAILED')
-      throw new Error(`${network === 'monad' ? 'Monad' : 'Sepolia'}: ${error.message}`)
-    } finally {
-      const card = document.querySelector(`[data-live-chain="${network}"]`)
-      if (card.dataset.state === 'running') setChainState(network, 'FAILED')
-    }
-  }
-
   runButton.addEventListener('click', async () => {
     runButton.disabled = true
     summary.hidden = true
-    delete results.monad
-    delete results.sepolia
     message.classList.remove('is-error')
     overallState.textContent = 'CHECKING STATE'
     overallState.dataset.state = 'running'
 
     try {
-      const passkeyStatus = await apiRequest('/api/passkey/status')
-      if (passkeyStatus.demoOrder) {
-        setMessage('Active passkey demo order detected. Cancel it first to restore benchmark state.', true)
-        overallState.textContent = 'BLOCKED'
-        overallState.dataset.state = 'failed'
-        const passkeySection = document.querySelector('#passkeys')
-        passkeySection.querySelector('.passkey-card')?.classList.add('needs-attention')
-        passkeySection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        return
-      }
-
       setMessage('Running 4 concurrent maker lanes and 16 real transactions on both testnets...')
       overallState.textContent = 'RUNNING...'
       overallState.dataset.state = 'running'
+      setChainState('monad', 'RUNNING', 'RUNNING...')
+      setChainState('sepolia', 'RUNNING', 'RUNNING...')
 
-      const outcomes = await Promise.allSettled([runNetwork('monad'), runNetwork('sepolia')])
-      const failures = outcomes.filter(({ status }) => status === 'rejected')
-      if (failures.length > 0) {
-        overallState.textContent = 'INCOMPLETE'
-        overallState.dataset.state = 'failed'
-        setMessage(
-          `Live run incomplete: ${failures.map(({ reason }) => reason.message).join(' ')}`,
-          true,
-        )
-        return
-      }
+      const results = await apiRequest('/api/benchmark/run', { method: 'POST' })
+      renderChainResult('monad', results.monad)
+      renderChainResult('sepolia', results.sepolia)
 
       const speedup = results.sepolia.completionDurationMs / results.monad.completionDurationMs
       const throughput =
@@ -737,6 +761,8 @@ function initializeLiveBenchmarkController() {
       overallState.dataset.state = 'complete'
       setMessage('Both live benchmark runs completed. Results above are calculated from this run.')
     } catch (error) {
+      setChainState('monad', 'FAILED')
+      setChainState('sepolia', 'FAILED')
       overallState.textContent = 'BLOCKED'
       overallState.dataset.state = 'failed'
       setMessage(error.message ?? 'Could not start the live comparison.', true)
@@ -746,11 +772,116 @@ function initializeLiveBenchmarkController() {
   })
 }
 
-initializeChainSelector()
-initializeCopyButtons()
-initializeRuntimeMode()
-loadBenchmark()
-if (IS_LOCAL_RUNTIME) {
-  initializePasskeyControl()
-  initializeLiveBenchmarkController()
+function initializePublicShowcaseInteractions() {
+  const runButton = document.querySelector('#run-live-comparison')
+  const message = document.querySelector('#live-run-message')
+  const overallState = document.querySelector('#live-run-state')
+  const summary = document.querySelector('#live-result-summary')
+  const completionSpeedup = document.querySelector('#live-completion-speedup')
+  const throughputMultiple = document.querySelector('#live-throughput-multiple')
+  const flow = document.querySelector('.passkey-flow')
+  const flowButton = document.querySelector('#view-passkey-flow-button')
+  const flowNodes = [...flow.querySelectorAll('.flow-node')]
+  const flowArrows = [...flow.querySelectorAll(':scope > i')]
+  const passkeyProgress = document.querySelector('#passkey-progress')
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  function wait(milliseconds) {
+    return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+  }
+
+  function setReplayChainState(network, state, detail = state) {
+    const card = document.querySelector(`[data-live-chain="${network}"]`)
+    const status = card.querySelector('[data-live-status]')
+    const normalizedState = state.toLowerCase()
+    card.dataset.state = normalizedState
+    status.dataset.state = normalizedState
+    status.textContent = detail
+  }
+
+  function resetReplayChain(network) {
+    const card = document.querySelector(`[data-live-chain="${network}"]`)
+    card.querySelectorAll('[data-live-metric]').forEach((metric) => {
+      metric.textContent = '—'
+    })
+    setReplayChainState(network, 'RUNNING', 'REPLAYING...')
+  }
+
+  function completeReplayChain(network) {
+    const result = VERIFIED_REPLAY_RESULTS[network]
+    const card = document.querySelector(`[data-live-chain="${network}"]`)
+    Object.entries(result).forEach(([metric, value]) => {
+      card.querySelector(`[data-live-metric="${metric}"]`).textContent = value
+    })
+    setReplayChainState(network, 'COMPLETE', 'COMPLETE')
+  }
+
+  runButton.addEventListener('click', async () => {
+    runButton.disabled = true
+    summary.hidden = true
+    message.classList.remove('is-error')
+    message.textContent = 'Replaying verified receipt timing — no transactions are being sent.'
+    overallState.textContent = 'REPLAYING...'
+    overallState.dataset.state = 'running'
+    resetReplayChain('monad')
+    resetReplayChain('sepolia')
+
+    await wait(reducedMotion ? 80 : 650)
+    completeReplayChain('monad')
+    await wait(reducedMotion ? 100 : 1150)
+    completeReplayChain('sepolia')
+
+    completionSpeedup.textContent = '10.7×'
+    throughputMultiple.textContent = 'Verified 16-maker / 64-transaction result'
+    summary.hidden = false
+    overallState.textContent = 'REPLAY COMPLETE'
+    overallState.dataset.state = 'complete'
+    message.textContent = 'Verified run replay complete — no transactions were sent.'
+    runButton.disabled = false
+  })
+
+  flowButton.addEventListener('click', async () => {
+    flowButton.disabled = true
+    flowButton.textContent = 'REPLAYING PASSKEY FLOW...'
+    passkeyProgress.textContent =
+      'Replaying the authorization path. No device prompt or credential request is made.'
+    flow.classList.add('is-replaying')
+    flowNodes.concat(flowArrows).forEach((element) => {
+      element.classList.remove('is-active-step', 'is-complete-step')
+    })
+
+    for (let index = 0; index < flowNodes.length; index += 1) {
+      if (index > 0) {
+        flowNodes[index - 1].classList.remove('is-active-step')
+        flowNodes[index - 1].classList.add('is-complete-step')
+        flowArrows[index - 1].classList.add('is-complete-step')
+      }
+      flowNodes[index].classList.add('is-active-step')
+      await wait(reducedMotion ? 40 : 280)
+    }
+
+    flowNodes.at(-1).classList.remove('is-active-step')
+    flowNodes.at(-1).classList.add('is-complete-step')
+    flow.classList.remove('is-replaying')
+    passkeyProgress.textContent =
+      'Real device signing is demonstrated locally during the presentation.'
+    flowButton.textContent = 'REPLAY PASSKEY FLOW'
+    flowButton.disabled = false
+  })
 }
+
+async function initializeApplication() {
+  initializeChainSelector()
+  initializeCopyButtons()
+  const interactive = await detectInteractiveBackend()
+  initializeRuntimeMode(interactive)
+  loadBenchmark()
+  if (interactive) {
+    initializePasskeyControl()
+    initializeLiveBenchmarkController()
+  } else {
+    initializePublicShowcaseInteractions()
+  }
+}
+
+initializeApplication()

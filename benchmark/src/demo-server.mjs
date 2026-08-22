@@ -20,8 +20,8 @@ import { MONAD_TESTNET, SEPOLIA } from './chains.mjs'
 import { INITIAL_BASE_PER_MAKER, INITIAL_QUOTE_PER_MAKER, MAKER_COUNT } from './config.mjs'
 import { MONAD_DEPLOYMENT, SEPOLIA_DEPLOYMENT } from './deployments.mjs'
 
-const HOST = '127.0.0.1'
-const PORT = 8080
+const PORT = Number(process.env.PORT || 8080)
+const HOST = process.env.HOST || '0.0.0.0'
 const MAX_BODY_BYTES = 64 * 1024
 const UINT256_MAX = 2n ** 256n - 1n
 const PREFLIGHT_DELAY_MS = 175
@@ -31,6 +31,9 @@ const BENCHMARK_CHILD_TIMEOUT_MS = 5 * 60 * 1_000
 const BENCHMARK_FORCE_KILL_DELAY_MS = 2_000
 const BENCHMARK_CLOSE_GRACE_MS = 1_000
 const LIVE_DEMO_MAKER_COUNT = 4
+const LIVE_BENCHMARK_COOLDOWN_MS = 60_000
+const DEMO_MAKER_INDEX = 15
+const RELAYER_MAKER_INDEX = 14
 const BYTES32_PATTERN = /^0x[0-9a-fA-F]{64}$/
 const HEX_BYTES_PATTERN = /^0x(?:[0-9a-fA-F]{2})*$/
 const demoRoot = fileURLToPath(new URL('../../demo/', import.meta.url))
@@ -38,6 +41,8 @@ const benchmarkRoot = fileURLToPath(new URL('../', import.meta.url))
 const resultsRoot = fileURLToPath(new URL('../results/', import.meta.url))
 const ORDER_ID_PARAMETERS = [{ type: 'address' }, { type: 'uint256' }]
 const runningBenchmarks = new Set()
+let benchmarkComparisonRunning = false
+let lastBenchmarkComparisonFinishedAt = 0
 
 const PASSKEY_ABI = parseAbi([
   'function registerPasskey(bytes32 qx, bytes32 qy)',
@@ -211,19 +216,22 @@ async function createContext() {
     }
   }
 
-  const walletFile = new URL('../.wallets.json', import.meta.url)
+  const walletFile = process.env.WALLETS_FILE ?? new URL('../.wallets.json', import.meta.url)
+  if (process.env.WALLETS_FILE && !path.isAbsolute(process.env.WALLETS_FILE)) {
+    throw new Error('WALLETS_FILE must be an absolute path')
+  }
   const walletData = JSON.parse(await readFile(walletFile, 'utf8'))
   if (!Array.isArray(walletData.makers) || walletData.makers.length !== MAKER_COUNT) {
-    throw new Error(`benchmark/.wallets.json must contain exactly ${MAKER_COUNT} makers`)
+    throw new Error(`Wallet file must contain exactly ${MAKER_COUNT} makers`)
   }
 
-  const maker = privateKeyToAccount(walletData.makers[0].privateKey)
-  const relayer = privateKeyToAccount(walletData.makers[1].privateKey)
-  if (maker.address !== getAddress(walletData.makers[0].address)) {
-    throw new Error('Demo maker address does not match wallet index 0')
+  const maker = privateKeyToAccount(walletData.makers[DEMO_MAKER_INDEX].privateKey)
+  const relayer = privateKeyToAccount(walletData.makers[RELAYER_MAKER_INDEX].privateKey)
+  if (maker.address !== getAddress(walletData.makers[DEMO_MAKER_INDEX].address)) {
+    throw new Error(`Demo maker address does not match wallet index ${DEMO_MAKER_INDEX}`)
   }
-  if (relayer.address !== getAddress(walletData.makers[1].address)) {
-    throw new Error('Relayer address does not match wallet index 1')
+  if (relayer.address !== getAddress(walletData.makers[RELAYER_MAKER_INDEX].address)) {
+    throw new Error(`Relayer address does not match wallet index ${RELAYER_MAKER_INDEX}`)
   }
 
   const networks = {}
@@ -360,14 +368,6 @@ async function readUpdatedMakerState(context) {
 
 async function verifyCleanBenchmarkState(context, network) {
   const config = context.networks[network]
-  if (network === 'monad') {
-    const status = await statusResponse(context)
-    if (status.demoOrder) {
-      throw new HttpError(409, 'Cancel the passkey demo order before running the benchmark.')
-    }
-    await sleep(PREFLIGHT_DELAY_MS)
-  }
-
   const liveMakerAddresses = context.makerAddresses.slice(0, LIVE_DEMO_MAKER_COUNT)
   for (let index = 0; index < liveMakerAddresses.length; index += 1) {
     const maker = liveMakerAddresses[index]
@@ -488,14 +488,14 @@ function executeBenchmark(network) {
   })
 }
 
-async function runBenchmark(context, network) {
+async function runBenchmark(context, network, { skipPreflight = false } = {}) {
   if (runningBenchmarks.has(network)) {
     throw new HttpError(409, `${benchmarkNetworks[network].label} benchmark is already running.`)
   }
 
   runningBenchmarks.add(network)
   try {
-    await verifyCleanBenchmarkState(context, network)
+    if (!skipPreflight) await verifyCleanBenchmarkState(context, network)
     const execution = await executeBenchmark(network)
     if (execution.timedOut) {
       throw new HttpError(
@@ -528,7 +528,80 @@ async function runBenchmark(context, network) {
   }
 }
 
+async function runBenchmarkComparison(context) {
+  if (benchmarkComparisonRunning || runningBenchmarks.size > 0) {
+    throw new HttpError(409, 'A live benchmark comparison is already running.')
+  }
+
+  const now = Date.now()
+  const cooldownRemaining = LIVE_BENCHMARK_COOLDOWN_MS - (now - lastBenchmarkComparisonFinishedAt)
+  if (lastBenchmarkComparisonFinishedAt !== 0 && cooldownRemaining > 0) {
+    throw new HttpError(
+      429,
+      `Live benchmark cooldown is active. Try again in ${Math.ceil(cooldownRemaining / 1_000)} seconds.`,
+    )
+  }
+
+  benchmarkComparisonRunning = true
+  try {
+    const preflightOutcomes = await Promise.allSettled([
+      verifyCleanBenchmarkState(context, 'monad'),
+      verifyCleanBenchmarkState(context, 'sepolia'),
+    ])
+    const preflightFailures = preflightOutcomes
+      .map((outcome, index) => ({ outcome, network: index === 0 ? 'Monad' : 'Sepolia' }))
+      .filter(({ outcome }) => outcome.status === 'rejected')
+    if (preflightFailures.length > 0) {
+      const statusCode = Math.max(
+        ...preflightFailures.map(({ outcome }) => outcome.reason.statusCode ?? 500),
+      )
+      throw new HttpError(
+        statusCode,
+        preflightFailures
+          .map(({ network, outcome }) => `${network}: ${outcome.reason.message}`)
+          .join(' '),
+      )
+    }
+
+    const outcomes = await Promise.allSettled([
+      runBenchmark(context, 'monad', { skipPreflight: true }),
+      runBenchmark(context, 'sepolia', { skipPreflight: true }),
+    ])
+    const failures = outcomes
+      .map((outcome, index) => ({ outcome, network: index === 0 ? 'Monad' : 'Sepolia' }))
+      .filter(({ outcome }) => outcome.status === 'rejected')
+    if (failures.length > 0) {
+      const statusCode = Math.max(
+        ...failures.map(({ outcome }) => outcome.reason.statusCode ?? 500),
+      )
+      throw new HttpError(
+        statusCode,
+        failures
+          .map(({ network, outcome }) => `${network}: ${outcome.reason.message}`)
+          .join(' '),
+      )
+    }
+
+    return {
+      monad: outcomes[0].value,
+      sepolia: outcomes[1].value,
+    }
+  } finally {
+    benchmarkComparisonRunning = false
+    lastBenchmarkComparisonFinishedAt = Date.now()
+  }
+}
+
 async function handleApi(request, response, context, pathname) {
+  if (request.method === 'GET' && pathname === '/api/health') {
+    sendJson(response, 200, {
+      ok: true,
+      monadChainId: 10143,
+      sepoliaChainId: 11155111,
+    })
+    return
+  }
+
   if (request.method === 'GET' && pathname === '/api/passkey/status') {
     sendJson(response, 200, await statusResponse(context))
     return
@@ -650,13 +723,12 @@ async function handleApi(request, response, context, pathname) {
     return
   }
 
-  const benchmarkMatch = pathname.match(/^\/api\/benchmark\/run\/(monad|sepolia)$/)
-  if (benchmarkMatch) {
+  if (pathname === '/api/benchmark/run') {
     if (request.method !== 'POST') {
       sendJson(response, 405, { error: 'Benchmark runs require an explicit POST request.' })
       return
     }
-    sendJson(response, 200, await runBenchmark(context, benchmarkMatch[1]))
+    sendJson(response, 200, await runBenchmarkComparison(context))
     return
   }
 

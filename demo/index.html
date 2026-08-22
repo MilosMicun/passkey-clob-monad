@@ -35,49 +35,49 @@
     <aside class="public-showcase-banner" id="public-showcase-banner" aria-label="Public showcase mode" hidden>
       <div class="shell">
         <strong>PUBLIC SHOWCASE</strong>
-        <p>Interactive passkey signing and the live dual-chain benchmark run locally during the demo. This public deployment presents the verified on-chain results, architecture, and deployed contracts.</p>
+        <p>Live on-chain controls are available during the presentation. This public deployment safely replays verified benchmark data.</p>
       </div>
     </aside>
 
     <main id="top">
       <section class="hero shell" aria-labelledby="hero-title">
         <div class="hero-copy live-race-copy">
-          <div class="eyebrow"><span>LIVE TESTNET CONTROLLER</span><span>REAL TRANSACTIONS</span></div>
+          <div class="eyebrow"><span id="controller-mode-label">LIVE TESTNET CONTROLLER</span><span id="controller-transaction-label">REAL TRANSACTIONS</span></div>
           <p class="kicker">Fully On-Chain Market Making</p>
           <h1 id="hero-title">
-            <span>Live quote-refresh</span>
-            <span>race.</span>
+            <span id="hero-action-label">Live quote-refresh</span>
+            <span id="hero-race-label">race.</span>
           </h1>
           <p class="hero-description">
             Same workload logic. Same prices. Same transaction sequence.
           </p>
           <div class="live-workload-facts" aria-label="Live workload">
-            <div><b>4</b><span>market makers</span></div>
+            <div><b id="controller-maker-count">4</b><span>market makers</span></div>
             <i>×</i>
             <div><b>4</b><span>actions each</span></div>
             <i>=</i>
-            <div><b>16</b><span>real on-chain tx</span></div>
+            <div><b id="controller-transaction-count">16</b><span id="controller-transaction-kind">real on-chain tx</span></div>
           </div>
           <p class="maker-race-context">Market makers earn spread by keeping two-sided quotes near fair value. This race measures how quickly they can refresh those quotes on-chain.</p>
           <button class="run-comparison-button" id="run-live-comparison" type="button" disabled>RUN LIVE COMPARISON</button>
-          <p class="public-control-note">LIVE DURING PRESENTATION</p>
-          <p class="live-rpc-note">Live demo uses 4 concurrent makers to stay within public RPC burst limits.</p>
+          <p class="public-control-note" id="run-control-note">LIVE DURING PRESENTATION</p>
+          <p class="live-rpc-note" id="controller-rpc-note">Live demo uses 4 concurrent makers to stay within public RPC burst limits.</p>
           <p class="live-run-message" id="live-run-message" role="status" aria-live="polite">Both networks are ready. The verified snapshot below remains visible during a live run.</p>
         </div>
 
         <aside class="live-run-panel panel" aria-label="Live benchmark controller">
-          <div class="live-run-head"><div><span class="micro-label">THIS LIVE RUN</span><h2>Monad vs Sepolia</h2></div><b id="live-run-state">READY</b></div>
+          <div class="live-run-head"><div><span class="micro-label" id="run-panel-label">THIS LIVE RUN</span><h2>Monad vs Sepolia</h2></div><b id="live-run-state">READY</b></div>
           <div class="live-chain-results">
             <article class="live-chain-card monad-live" data-live-chain="monad">
-              <div class="live-chain-head"><span class="chain-symbol monad-symbol">M</span><div><b>MONAD TESTNET</b><small>4 concurrent maker lanes</small></div><strong data-live-status>READY</strong></div>
+              <div class="live-chain-head"><span class="chain-symbol monad-symbol">M</span><div><b>MONAD TESTNET</b><small data-run-lane-label>4 concurrent maker lanes</small></div><strong data-live-status>READY</strong></div>
               <div class="live-metrics"><div><span>COMPLETION</span><b data-live-metric="completion">—</b></div><div><span>THROUGHPUT</span><b data-live-metric="throughput">—</b></div><div><span>P50 / P95</span><b data-live-metric="latency">—</b></div><div><span>SUCCESS</span><b data-live-metric="success">—</b></div></div>
             </article>
             <article class="live-chain-card sepolia-live" data-live-chain="sepolia">
-              <div class="live-chain-head"><span class="chain-symbol eth-symbol">Ξ</span><div><b>ETHEREUM SEPOLIA</b><small>4 concurrent maker lanes</small></div><strong data-live-status>READY</strong></div>
+              <div class="live-chain-head"><span class="chain-symbol eth-symbol">Ξ</span><div><b>ETHEREUM SEPOLIA</b><small data-run-lane-label>4 concurrent maker lanes</small></div><strong data-live-status>READY</strong></div>
               <div class="live-metrics"><div><span>COMPLETION</span><b data-live-metric="completion">—</b></div><div><span>THROUGHPUT</span><b data-live-metric="throughput">—</b></div><div><span>P50 / P95</span><b data-live-metric="latency">—</b></div><div><span>SUCCESS</span><b data-live-metric="success">—</b></div></div>
             </article>
           </div>
-          <div class="live-result-summary" id="live-result-summary" hidden><span>THIS LIVE RUN — 4 MAKERS / 16 TX</span><strong id="live-completion-speedup">—</strong><b>faster completion</b><small>Observed in this live run</small><p id="live-throughput-multiple">—</p></div>
+          <div class="live-result-summary" id="live-result-summary" hidden><span id="run-summary-label">THIS LIVE RUN — 4 MAKERS / 16 TX</span><strong id="live-completion-speedup">—</strong><b>faster completion</b><small id="run-summary-caption">Observed in this live run</small><p id="live-throughput-multiple">—</p></div>
           <div class="data-source"><span></span><b id="data-source-status">VERIFIED SNAPSHOT · LOADING</b></div>
         </aside>
       </section>
@@ -221,6 +221,8 @@
             </div>
             <p class="passkey-progress" id="passkey-progress" role="status" aria-live="polite">Connect to the local demo server to begin.</p>
             <p class="public-control-note passkey-public-note">DEVICE PASSKEY DEMO RUNS LOCALLY</p>
+            <button class="public-passkey-flow-button" id="view-passkey-flow-button" type="button">VIEW PASSKEY FLOW</button>
+            <p class="public-passkey-disclaimer">Real device signing is demonstrated locally during the presentation.</p>
             <div class="passkey-actions">
               <button id="create-passkey-button" type="button" disabled>CREATE DEVICE PASSKEY</button>
               <button id="place-passkey-button" type="button" disabled>PLACE ORDER WITH PASSKEY</button>
@@ -239,8 +241,8 @@
       <section class="technical-grid shell section-space" aria-label="Deployments and methodology">
         <article class="deployments panel">
           <div class="card-head"><div><span class="section-index">05 / DEPLOYMENTS</span><h2>Live testnet contracts</h2></div><span class="verified-badge">VERIFIED CODE</span></div>
-          <div class="deployment-card" data-chain-card="monad"><div class="deployment-chain"><span class="chain-symbol monad-symbol">M</span><div><b>MONAD TESTNET</b><small>Chain ID 10143</small></div></div><div class="contract-address"><span>CLOB</span><code>0x9D20056D8c86e83E06047875D0E016DAA9F4e48D</code><button type="button" data-copy="0x9D20056D8c86e83E06047875D0E016DAA9F4e48D" aria-label="Copy Monad CLOB address">COPY</button></div></div>
-          <div class="deployment-card" data-chain-card="sepolia"><div class="deployment-chain"><span class="chain-symbol eth-symbol">Ξ</span><div><b>ETHEREUM SEPOLIA</b><small>Chain ID 11155111</small></div></div><div class="contract-address"><span>CLOB</span><code>0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B</code><button type="button" data-copy="0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B" aria-label="Copy Sepolia CLOB address">COPY</button></div></div>
+          <div class="deployment-card" data-chain-card="monad"><div class="deployment-chain"><span class="chain-symbol monad-symbol">M</span><div><b>MONAD TESTNET</b><small>Chain ID 10143</small></div></div><div class="contract-address"><span>CLOB</span><a class="explorer-address" href="https://testnet.monadscan.com/address/0x9D20056D8c86e83E06047875D0E016DAA9F4e48D" target="_blank" rel="noopener noreferrer" aria-label="View Monad CLOB contract in Monadscan"><code>0x9D20056D8c86e83E06047875D0E016DAA9F4e48D</code></a><button type="button" data-copy="0x9D20056D8c86e83E06047875D0E016DAA9F4e48D" aria-label="Copy Monad CLOB address">COPY</button></div></div>
+          <div class="deployment-card" data-chain-card="sepolia"><div class="deployment-chain"><span class="chain-symbol eth-symbol">Ξ</span><div><b>ETHEREUM SEPOLIA</b><small>Chain ID 11155111</small></div></div><div class="contract-address"><span>CLOB</span><a class="explorer-address" href="https://sepolia.etherscan.io/address/0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B" target="_blank" rel="noopener noreferrer" aria-label="View Sepolia CLOB contract in Etherscan"><code>0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B</code></a><button type="button" data-copy="0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B" aria-label="Copy Sepolia CLOB address">COPY</button></div></div>
         </article>
 
         <article class="methodology panel">

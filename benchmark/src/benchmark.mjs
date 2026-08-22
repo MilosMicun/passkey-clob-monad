@@ -97,11 +97,14 @@ function parseArguments(arguments_) {
 }
 
 async function loadMakers(selectedMakerCount) {
-  const walletFile = new URL('../.wallets.json', import.meta.url)
+  const walletFile = process.env.WALLETS_FILE ?? new URL('../.wallets.json', import.meta.url)
+  if (process.env.WALLETS_FILE && !path.isAbsolute(process.env.WALLETS_FILE)) {
+    throw new Error('WALLETS_FILE must be an absolute path')
+  }
   const walletData = JSON.parse(await readFile(walletFile, 'utf8'))
 
   if (!Array.isArray(walletData.makers) || walletData.makers.length !== MAKER_COUNT) {
-    throw new Error(`Expected exactly ${MAKER_COUNT} makers in benchmark/.wallets.json`)
+    throw new Error(`Expected exactly ${MAKER_COUNT} makers in the wallet file`)
   }
 
   return walletData.makers
