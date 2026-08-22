@@ -9,6 +9,37 @@ const DEMO_ORDER = Object.freeze({
 const LIVE_DEMO_MAKER_COUNT = 4
 const LIVE_DEMO_ACTIONS_PER_MAKER = 4
 const LIVE_DEMO_TOTAL_TRANSACTIONS = 16
+const IS_LOCAL_RUNTIME = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+
+function initializeRuntimeMode() {
+  document.body.dataset.runtimeMode = IS_LOCAL_RUNTIME ? 'local' : 'public'
+  const runButton = document.querySelector('#run-live-comparison')
+  const showcaseBanner = document.querySelector('#public-showcase-banner')
+
+  if (IS_LOCAL_RUNTIME) {
+    showcaseBanner.hidden = true
+    runButton.disabled = false
+    return
+  }
+
+  showcaseBanner.hidden = false
+  document.querySelector('#runtime-status-label').textContent = 'PUBLIC SHOWCASE'
+  document.querySelector('#live-run-state').textContent = 'LOCAL DEMO'
+  document.querySelector('#live-run-message').textContent =
+    'LIVE DURING PRESENTATION — verified full-benchmark results remain available below.'
+  document.querySelectorAll('[data-live-status]').forEach((status) => {
+    status.textContent = 'PRESENTATION ONLY'
+  })
+
+  runButton.disabled = true
+  document.querySelector('#passkey-registration-status').textContent = 'PUBLIC SHOWCASE'
+  document.querySelector('#passkey-registration-status').dataset.state = 'showcase'
+  document.querySelector('#passkey-progress').textContent =
+    'DEVICE PASSKEY DEMO RUNS LOCALLY — no browser credential or backend connection is requested here.'
+  document.querySelector('#create-passkey-button').disabled = true
+  document.querySelector('#place-passkey-button').disabled = true
+  document.querySelector('#cancel-passkey-button').disabled = true
+}
 
 function valueAtPath(object, path) {
   return path.split('.').reduce((value, key) => value?.[key], object)
@@ -286,6 +317,7 @@ function parseEcdsaSignature(signatureBuffer) {
 }
 
 async function apiRequest(path, { method = 'GET', body } = {}) {
+  if (!IS_LOCAL_RUNTIME) throw new Error('Interactive APIs are available only on localhost.')
   const response = await fetch(path, {
     method,
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
@@ -716,6 +748,9 @@ function initializeLiveBenchmarkController() {
 
 initializeChainSelector()
 initializeCopyButtons()
+initializeRuntimeMode()
 loadBenchmark()
-initializePasskeyControl()
-initializeLiveBenchmarkController()
+if (IS_LOCAL_RUNTIME) {
+  initializePasskeyControl()
+  initializeLiveBenchmarkController()
+}

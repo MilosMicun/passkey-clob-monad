@@ -210,6 +210,48 @@ a:focus-visible {
   box-shadow: 0 0 0 4px rgba(83, 230, 165, 0.09), 0 0 16px rgba(83, 230, 165, 0.5);
 }
 
+.public-showcase-banner {
+  border-block: 1px solid rgba(139, 124, 255, 0.24);
+  background: linear-gradient(90deg, rgba(139, 124, 255, 0.13), rgba(83, 230, 165, 0.045));
+}
+
+.public-showcase-banner[hidden] { display: none; }
+
+.public-showcase-banner > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+  min-height: 76px;
+  padding-block: 15px;
+}
+
+.public-showcase-banner strong {
+  color: var(--monad-bright);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.11em;
+}
+
+.public-showcase-banner p {
+  max-width: 920px;
+  margin: 0;
+  color: var(--muted-bright);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+body[data-runtime-mode="public"] .header-status {
+  border-color: rgba(139, 124, 255, 0.24);
+  color: var(--monad-bright);
+  background: rgba(139, 124, 255, 0.07);
+}
+
+body[data-runtime-mode="public"] .status-dot {
+  background: var(--monad-bright);
+  box-shadow: 0 0 0 4px rgba(139, 124, 255, 0.09), 0 0 16px rgba(139, 124, 255, 0.4);
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(500px, 0.92fr);
@@ -411,6 +453,24 @@ a:focus-visible {
 
 .run-comparison-button:not(:disabled):hover { transform: translateY(-2px); filter: brightness(1.08); }
 .run-comparison-button:disabled { cursor: wait; filter: saturate(0.55); opacity: 0.7; }
+
+body[data-runtime-mode="public"] .run-comparison-button:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.35);
+  opacity: 0.62;
+}
+
+.public-control-note {
+  display: none;
+  margin: 10px 0 0;
+  color: var(--monad-bright);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+body[data-runtime-mode="public"] .public-control-note { display: block; }
 
 .live-rpc-note {
   margin: 11px 0 0;
@@ -1615,6 +1675,7 @@ body[data-chain="sepolia"] .monad-row {
 
 .passkey-control-head > b[data-state="missing"] { color: #ffcb74; }
 .passkey-control-head > b[data-state="error"] { color: #ff7f8d; }
+.passkey-control-head > b[data-state="showcase"] { color: var(--monad-bright); }
 
 .passkey-demo-details {
   display: grid;
@@ -1670,6 +1731,7 @@ body[data-chain="sepolia"] .monad-row {
 }
 
 .passkey-progress.is-error { color: #ff7f8d; }
+.passkey-public-note { margin-top: 10px; }
 
 .passkey-actions {
   display: grid;
@@ -1929,6 +1991,7 @@ body[data-chain="sepolia"] .deployment-card.is-selected {
   .site-header { min-height: 66px; }
   .brand { font-size: 11px; }
   .header-status { padding: 7px 8px; font-size: 8px; }
+  .public-showcase-banner > div { grid-template-columns: 1fr; gap: 7px; }
   .hero { padding-top: 46px; }
   .eyebrow span:nth-child(2) { display: none; }
   .hero h1 { font-size: clamp(39px, 12.5vw, 56px); }
