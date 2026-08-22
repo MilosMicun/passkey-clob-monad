@@ -18,3 +18,9 @@ docs/
 .env
 .env.*
 !.env.example
+
+# Benchmark local state
+/benchmark/.env
+/benchmark/.wallets.json
+/benchmark/results/
+benchmark/node_modules/
