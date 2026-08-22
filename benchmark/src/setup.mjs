@@ -21,6 +21,12 @@ const networks = {
   },
 }
 
+const VERIFICATION_REQUEST_DELAY_MS = 175
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
 async function loadMakers() {
   const walletFile = new URL('../.wallets.json', import.meta.url)
   const walletData = JSON.parse(await readFile(walletFile, 'utf8'))
@@ -167,21 +173,16 @@ async function main() {
     console.log(`setup complete: ${maker.address}`)
   }
 
-  for (const maker of makers) {
-    const [balance, nonce] = await Promise.all([
-      publicClient.readContract({
-        address: config.deployment.clob,
-        abi: PASSKEY_CLOB_ABI,
-        functionName: 'balances',
-        args: [maker.address],
-      }),
-      publicClient.readContract({
-        address: config.deployment.clob,
-        abi: PASSKEY_CLOB_ABI,
-        functionName: 'makerNonce',
-        args: [maker.address],
-      }),
-    ])
+  await sleep(VERIFICATION_REQUEST_DELAY_MS)
+
+  for (let index = 0; index < makers.length; index += 1) {
+    const maker = makers[index]
+    const balance = await publicClient.readContract({
+      address: config.deployment.clob,
+      abi: PASSKEY_CLOB_ABI,
+      functionName: 'balances',
+      args: [maker.address],
+    })
 
     const [availableBase, reservedBase, availableQuote, reservedQuote] = balance
     if (
@@ -192,8 +193,23 @@ async function main() {
     ) {
       throw new Error(`Unexpected CLOB balance for ${maker.address}`)
     }
+
+    await sleep(VERIFICATION_REQUEST_DELAY_MS)
+
+    const nonce = await publicClient.readContract({
+      address: config.deployment.clob,
+      abi: PASSKEY_CLOB_ABI,
+      functionName: 'makerNonce',
+      args: [maker.address],
+    })
     if (nonce !== 0n) {
       throw new Error(`Expected makerNonce 0 for ${maker.address}, received ${nonce}`)
+    }
+
+    console.log(`verified: ${maker.address}`)
+
+    if (index + 1 < makers.length) {
+      await sleep(VERIFICATION_REQUEST_DELAY_MS)
     }
   }
 
