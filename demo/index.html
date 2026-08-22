@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Passkey CLOB — fully on-chain market making on Monad, benchmarked live against Ethereum Sepolia."
+    />
+    <title>Passkey CLOB — On-Chain Market Making</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body data-chain="monad">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Passkey CLOB home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>PASSKEY <b>CLOB</b></span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#benchmark">Benchmark</a>
+        <a href="#market">Market</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#passkeys">Passkeys</a>
+      </nav>
+      <div class="header-status">
+        <span class="status-dot" aria-hidden="true"></span>
+        LIVE TESTNET
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero shell" aria-labelledby="hero-title">
+        <div class="hero-copy live-race-copy">
+          <div class="eyebrow"><span>LIVE TESTNET CONTROLLER</span><span>REAL TRANSACTIONS</span></div>
+          <p class="kicker">Fully On-Chain Market Making</p>
+          <h1 id="hero-title">
+            <span>Live quote-refresh</span>
+            <span>race.</span>
+          </h1>
+          <p class="hero-description">
+            Same workload logic. Same prices. Same transaction sequence.
+          </p>
+          <div class="live-workload-facts" aria-label="Live workload">
+            <div><b>4</b><span>market makers</span></div>
+            <i>×</i>
+            <div><b>4</b><span>actions each</span></div>
+            <i>=</i>
+            <div><b>16</b><span>real on-chain tx</span></div>
+          </div>
+          <p class="maker-race-context">Market makers earn spread by keeping two-sided quotes near fair value. This race measures how quickly they can refresh those quotes on-chain.</p>
+          <button class="run-comparison-button" id="run-live-comparison" type="button">RUN LIVE COMPARISON</button>
+          <p class="live-rpc-note">Live demo uses 4 concurrent makers to stay within public RPC burst limits.</p>
+          <p class="live-run-message" id="live-run-message" role="status" aria-live="polite">Both networks are ready. The verified snapshot below remains visible during a live run.</p>
+        </div>
+
+        <aside class="live-run-panel panel" aria-label="Live benchmark controller">
+          <div class="live-run-head"><div><span class="micro-label">THIS LIVE RUN</span><h2>Monad vs Sepolia</h2></div><b id="live-run-state">READY</b></div>
+          <div class="live-chain-results">
+            <article class="live-chain-card monad-live" data-live-chain="monad">
+              <div class="live-chain-head"><span class="chain-symbol monad-symbol">M</span><div><b>MONAD TESTNET</b><small>4 concurrent maker lanes</small></div><strong data-live-status>READY</strong></div>
+              <div class="live-metrics"><div><span>COMPLETION</span><b data-live-metric="completion">—</b></div><div><span>THROUGHPUT</span><b data-live-metric="throughput">—</b></div><div><span>P50 / P95</span><b data-live-metric="latency">—</b></div><div><span>SUCCESS</span><b data-live-metric="success">—</b></div></div>
+            </article>
+            <article class="live-chain-card sepolia-live" data-live-chain="sepolia">
+              <div class="live-chain-head"><span class="chain-symbol eth-symbol">Ξ</span><div><b>ETHEREUM SEPOLIA</b><small>4 concurrent maker lanes</small></div><strong data-live-status>READY</strong></div>
+              <div class="live-metrics"><div><span>COMPLETION</span><b data-live-metric="completion">—</b></div><div><span>THROUGHPUT</span><b data-live-metric="throughput">—</b></div><div><span>P50 / P95</span><b data-live-metric="latency">—</b></div><div><span>SUCCESS</span><b data-live-metric="success">—</b></div></div>
+            </article>
+          </div>
+          <div class="live-result-summary" id="live-result-summary" hidden><span>THIS LIVE RUN — 4 MAKERS / 16 TX</span><strong id="live-completion-speedup">—</strong><b>faster completion</b><small>Observed in this live run</small><p id="live-throughput-multiple">—</p></div>
+          <div class="data-source"><span></span><b id="data-source-status">VERIFIED SNAPSHOT · LOADING</b></div>
+        </aside>
+      </section>
+
+      <section class="benchmark-section shell section-space" id="benchmark" aria-labelledby="benchmark-title">
+        <div class="section-heading">
+          <div><span class="section-index">01 / FULL VERIFIED BENCHMARK</span><h2 id="benchmark-title">Same workload. Different clock.</h2></div>
+          <p>Verified snapshot · Local/RPC observed completion across 16 nonce-ordered maker lanes.</p>
+        </div>
+
+        <div class="full-benchmark-summary panel" aria-label="Full verified benchmark summary">
+          <div><span>FULL VERIFIED BENCHMARK</span><strong>16 market makers · 4 actions each · 64 real on-chain transactions</strong></div>
+          <div><span>PREVIOUS VERIFIED RUN</span><b>Monad: 0.95s</b><b>Sepolia: 10.17s</b><strong>Observed completion difference: 10.7×</strong></div>
+        </div>
+
+        <div class="benchmark-board panel">
+          <div class="benchmark-head">
+            <div class="metric-label">METRIC</div>
+            <div class="chain-heading monad-heading"><span class="chain-symbol monad-symbol">M</span><div><b>MONAD TESTNET</b><small>Chain 10143</small></div></div>
+            <div class="versus">VS</div>
+            <div class="chain-heading eth-heading"><span class="chain-symbol eth-symbol">Ξ</span><div><b>ETHEREUM SEPOLIA</b><small>Chain 11155111</small></div></div>
+          </div>
+
+          <div class="comparison-row" data-comparison="completion">
+            <div class="comparison-name"><b>Completion</b><small>64 receipts observed</small></div>
+            <div class="comparison-cell"><strong data-metric="chains.monad.completionDurationMs" data-format="secondsLabel">0.95 sec</strong><div class="metric-track"><i class="monad-fill" data-compare-bar="chains.monad.completionDurationMs"></i></div></div>
+            <div class="ratio-chip" data-metric="comparisons.completionSpeedup" data-format="multiple">10.7×</div>
+            <div class="comparison-cell"><strong data-metric="chains.sepolia.completionDurationMs" data-format="secondsLabel">10.17 sec</strong><div class="metric-track"><i class="eth-fill" data-compare-bar="chains.sepolia.completionDurationMs"></i></div></div>
+          </div>
+          <div class="comparison-row" data-comparison="throughput">
+            <div class="comparison-name"><b>Throughput</b><small>successful tx / second</small></div>
+            <div class="comparison-cell"><strong data-metric="chains.monad.throughputTxPerSecond" data-format="txRate">67.2 tx/s</strong><div class="metric-track"><i class="monad-fill" data-compare-bar="chains.monad.throughputTxPerSecond"></i></div></div>
+            <div class="ratio-chip" data-metric="comparisons.throughputMultiple" data-format="multiple">10.7×</div>
+            <div class="comparison-cell"><strong data-metric="chains.sepolia.throughputTxPerSecond" data-format="txRate">6.29 tx/s</strong><div class="metric-track"><i class="eth-fill" data-compare-bar="chains.sepolia.throughputTxPerSecond"></i></div></div>
+          </div>
+          <div class="comparison-row" data-comparison="p50">
+            <div class="comparison-name"><b>P50 latency</b><small>locally observed</small></div>
+            <div class="comparison-cell"><strong data-metric="chains.monad.p50LatencyMs" data-format="secondsLabel">0.48 sec</strong><div class="metric-track"><i class="monad-fill" data-compare-bar="chains.monad.p50LatencyMs"></i></div></div>
+            <div class="ratio-chip" data-metric="comparisons.p50LatencyMultiple" data-format="multiple">20.5×</div>
+            <div class="comparison-cell"><strong data-metric="chains.sepolia.p50LatencyMs" data-format="secondsLabel">9.90 sec</strong><div class="metric-track"><i class="eth-fill" data-compare-bar="chains.sepolia.p50LatencyMs"></i></div></div>
+          </div>
+          <div class="comparison-row" data-comparison="p95">
+            <div class="comparison-name"><b>P95 latency</b><small>locally observed</small></div>
+            <div class="comparison-cell"><strong data-metric="chains.monad.p95LatencyMs" data-format="secondsLabel">0.85 sec</strong><div class="metric-track"><i class="monad-fill" data-compare-bar="chains.monad.p95LatencyMs"></i></div></div>
+            <div class="ratio-chip muted">LATENCY</div>
+            <div class="comparison-cell"><strong data-metric="chains.sepolia.p95LatencyMs" data-format="secondsLabel">10.17 sec</strong><div class="metric-track"><i class="eth-fill" data-compare-bar="chains.sepolia.p95LatencyMs"></i></div></div>
+          </div>
+          <div class="comparison-row success-row">
+            <div class="comparison-name"><b>Success</b><small>confirmed transactions</small></div>
+            <div class="comparison-cell success-cell"><strong>64 / 64</strong><span>100% confirmed</span></div>
+            <div class="ratio-chip success-chip">PASS</div>
+            <div class="comparison-cell success-cell"><strong>64 / 64</strong><span>100% confirmed</span></div>
+          </div>
+        </div>
+
+        <div class="metric-footnotes">
+          <div><span class="legend-dot local-dot"></span><b>LOCAL / RPC OBSERVED</b><p>Submission, completion, and receipt latency include public RPC observation.</p></div>
+          <div><span class="legend-dot chain-dot"></span><b>ON-CHAIN</b><p>Monad: blocks 55,948,288–55,948,290 · 1s timestamp window. Sepolia: block 11,543,333 · 0s timestamp window.</p></div>
+        </div>
+        <p class="live-demo-methodology">The full 64-transaction benchmark is retained as the verified comparison. The interactive live demo uses 16 transactions because public RPC providers can throttle large simultaneous submission bursts before transactions reach the chain.</p>
+      </section>
+
+      <section class="product-grid shell section-space" id="market" aria-label="Market maker product view">
+        <article class="orderbook panel interactive-panel">
+          <div class="card-head"><div><span class="section-index">02 / MARKET</span><h2>BASE / QUOTE</h2></div><span class="market-live"><i></i>ACTIVE</span></div>
+          <div class="book-columns"><span>PRICE</span><span>SIZE</span><span>TOTAL</span></div>
+          <div class="book-row ask"><b>101.00</b><span>4.20</span><span>424.20</span><i style="--depth: 72%"></i></div>
+          <div class="book-row ask"><b>100.50</b><span>2.80</span><span>281.40</span><i style="--depth: 48%"></i></div>
+          <div class="mid-row"><span>ASK</span><div><i></i>MID 100.00</div><span>2.00%</span></div>
+          <div class="book-row bid"><b>99.50</b><span>3.10</span><span>308.45</span><i style="--depth: 54%"></i></div>
+          <div class="book-row bid"><b>99.00</b><span>5.40</span><span>534.60</span><i style="--depth: 86%"></i></div>
+          <div class="book-labels"><span class="bid-text">BID</span><span class="ask-text">ASK</span></div>
+        </article>
+
+        <article class="maker-card panel interactive-panel">
+          <div class="card-head"><div><span class="section-index">MARKET MAKER</span><h2>Two-sided quote</h2></div><span class="inventory-badge">NEUTRAL</span></div>
+          <div class="quote-pair"><div><small>BID</small><strong>99</strong><span>buy BASE</span></div><div><small>ASK</small><strong>101</strong><span>sell BASE</span></div></div>
+          <div class="spread-line"><span>GROSS SPREAD</span><b>2</b></div>
+          <div class="edge-equation"><span>Market Maker Edge</span><div><b>spread captured</b><i>−</i><span>execution costs</span><i>−</i><span>stale quote losses</span><i>−</i><span>adverse selection</span></div></div>
+          <p>Faster quote refresh lets a market maker keep orders closer to the current market instead of leaving stale quotes exposed while waiting for the next block.</p>
+        </article>
+
+        <article class="refresh-card panel interactive-panel">
+          <div class="card-head"><div><span class="section-index">QUOTE REFRESH</span><h2>Prices move. Quotes follow.</h2></div><span class="refresh-loop">LIVE LOOP</span></div>
+          <div class="refresh-timeline" aria-label="Quote refresh sequence">
+            <div class="quote-stage stage-one"><span>01</span><div><b>99</b><i>/</i><b>101</b></div><small>initial quote</small></div>
+            <div class="refresh-action"><i></i><span>cancel / replace</span></div>
+            <div class="quote-stage stage-two"><span>02</span><div><b>100</b><i>/</i><b>102</b></div><small>market moves up</small></div>
+            <div class="refresh-action"><i></i><span>cancel / replace</span></div>
+            <div class="quote-stage stage-three"><span>03</span><div><b>98</b><i>/</i><b>100</b></div><small>inventory rebalance</small></div>
+          </div>
+          <p>Market makers do not place one quote and wait. They continuously update inventory and prices. <b>This is the workload Monad changes.</b></p>
+        </article>
+      </section>
+
+      <section class="architecture shell section-space" id="architecture" aria-labelledby="architecture-title">
+        <div class="section-heading">
+          <div><span class="section-index">03 / FULL 64-TX EXECUTION MODEL</span><h2 id="architecture-title">Independent makers. Concurrent lanes.</h2></div>
+          <div class="workload-total"><b>4</b><span>actions</span><i>×</i><b>16</b><span>makers</span><i>=</i><strong>64 TX</strong></div>
+        </div>
+
+        <div class="lane-panel panel">
+          <div class="lane-legend"><span>MAKER LANE</span><span>NONCE-ORDERED ACTIONS</span><span>EXECUTION</span></div>
+          <div class="maker-lane"><span class="maker-id">Maker 01</span><div class="lane-actions"><b>place</b><i>→</i><b>replace</b><i>→</i><b>replace</b><i>→</i><b>cancel</b></div><span class="lane-state">CONCURRENT</span></div>
+          <div class="maker-lane"><span class="maker-id">Maker 02</span><div class="lane-actions"><b>place</b><i>→</i><b>replace</b><i>→</i><b>replace</b><i>→</i><b>cancel</b></div><span class="lane-state">CONCURRENT</span></div>
+          <div class="maker-lane"><span class="maker-id">Maker 03</span><div class="lane-actions"><b>place</b><i>→</i><b>replace</b><i>→</i><b>replace</b><i>→</i><b>cancel</b></div><span class="lane-state">CONCURRENT</span></div>
+          <div class="lane-break"><span></span><i></i><i></i><i></i><span></span></div>
+          <div class="maker-lane"><span class="maker-id">Maker 16</span><div class="lane-actions"><b>place</b><i>→</i><b>replace</b><i>→</i><b>replace</b><i>→</i><b>cancel</b></div><span class="lane-state">CONCURRENT</span></div>
+          <div class="architecture-notes"><div><span>WITHIN EACH MAKER</span><b>Nonce-dependent ordered sequence</b></div><i></i><div><span>ACROSS MAKERS</span><b>Independent concurrent execution</b></div></div>
+        </div>
+      </section>
+
+      <section class="passkey-section shell section-space" id="passkeys" aria-labelledby="passkey-title">
+        <div class="passkey-card panel">
+          <div class="passkey-intro">
+            <span class="section-index">04 / AUTHORIZATION</span>
+            <h2 id="passkey-title">Order control,<br />secured by your device.</h2>
+            <p>Users authorize order actions with a device passkey instead of manually signing every transaction with a wallet.</p>
+            <div class="implementation-status"><span><i>✓</i>P256 / WebAuthn verification <b>IMPLEMENTED</b></span><span><i>✓</i>Foundry tests <b>PASSING</b></span></div>
+          </div>
+          <div class="passkey-flow" aria-label="Passkey authorization flow">
+            <div class="flow-node primary"><span class="device-icon" aria-hidden="true"></span><b>Device Passkey</b><small>PIN · biometric</small></div>
+            <i>↓</i><div class="flow-node"><b>WebAuthn</b><small>challenge</small></div>
+            <i>↓</i><div class="flow-node"><b>P256 Signature</b><small>user verified</small></div>
+            <i>↓</i><div class="flow-node"><b>Relayer</b><small>permissionless</small></div>
+            <i>↓</i><div class="flow-node"><b>On-chain verification</b><small>OpenZeppelin</small></div>
+            <i>↓</i><div class="flow-node success-node"><b>CLOB state transition</b><small>authorized ✓</small></div>
+          </div>
+          <div class="passkey-control" aria-label="Live passkey order control">
+            <div class="passkey-control-head">
+              <span>PASSKEY ORDER CONTROL</span>
+              <b id="passkey-registration-status" data-state="loading">CHECKING…</b>
+            </div>
+            <div class="passkey-demo-details">
+              <div><span>DEMO MAKER</span><code id="demo-maker">—</code></div>
+              <div><span>ACTION</span><strong>SELL 1 BASE @ 100</strong></div>
+            </div>
+            <div class="passkey-nonces" aria-label="On-chain nonces">
+              <div><span>authNonce</span><b id="demo-auth-nonce">—</b></div>
+              <div><span>makerNonce</span><b id="demo-maker-nonce">—</b></div>
+            </div>
+            <p class="passkey-progress" id="passkey-progress" role="status" aria-live="polite">Connect to the local demo server to begin.</p>
+            <div class="passkey-actions">
+              <button id="create-passkey-button" type="button">CREATE DEVICE PASSKEY</button>
+              <button id="place-passkey-button" type="button" disabled>PLACE ORDER WITH PASSKEY</button>
+              <button id="cancel-passkey-button" type="button" hidden disabled>CANCEL DEMO ORDER WITH PASSKEY</button>
+            </div>
+            <div class="active-demo-order" id="active-demo-order" hidden><span>ACTIVE DEMO ORDER</span><code id="active-demo-order-id">—</code></div>
+            <div class="passkey-result" id="passkey-result" hidden>
+              <strong id="passkey-result-title">AUTHORIZED <i>✓</i></strong>
+              <span id="passkey-result-flow">Windows Hello → WebAuthn → P256 → Relayer → Monad → CLOB</span>
+              <a id="passkey-tx-link" href="#" target="_blank" rel="noopener noreferrer">TX: —</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="technical-grid shell section-space" aria-label="Deployments and methodology">
+        <article class="deployments panel">
+          <div class="card-head"><div><span class="section-index">05 / DEPLOYMENTS</span><h2>Live testnet contracts</h2></div><span class="verified-badge">VERIFIED CODE</span></div>
+          <div class="deployment-card" data-chain-card="monad"><div class="deployment-chain"><span class="chain-symbol monad-symbol">M</span><div><b>MONAD TESTNET</b><small>Chain ID 10143</small></div></div><div class="contract-address"><span>CLOB</span><code>0x9D20056D8c86e83E06047875D0E016DAA9F4e48D</code><button type="button" data-copy="0x9D20056D8c86e83E06047875D0E016DAA9F4e48D" aria-label="Copy Monad CLOB address">COPY</button></div></div>
+          <div class="deployment-card" data-chain-card="sepolia"><div class="deployment-chain"><span class="chain-symbol eth-symbol">Ξ</span><div><b>ETHEREUM SEPOLIA</b><small>Chain ID 11155111</small></div></div><div class="contract-address"><span>CLOB</span><code>0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B</code><button type="button" data-copy="0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B" aria-label="Copy Sepolia CLOB address">COPY</button></div></div>
+        </article>
+
+        <article class="methodology panel">
+          <div class="card-head"><div><span class="section-index">06 / FULL BENCHMARK METHODOLOGY</span><h2>Controlled comparison</h2></div><span class="method-tag">LIKE FOR LIKE</span></div>
+          <ul class="method-list"><li>Same Solidity source</li><li>Same compiler / config</li><li>Same 16 maker keys</li><li>Same order amounts</li><li>Same prices</li><li>Same transaction algorithm</li><li>Same 64 state transitions</li></ul>
+          <div class="method-divider"></div>
+          <div class="method-metrics"><div><span class="legend-dot local-dot"></span><p><b>Local / RPC observed</b>Submission, completion, p50 and p95 receipt latency.</p></div><div><span class="legend-dot chain-dot"></span><p><b>On-chain blocks</b>Block span and timestamp window reported separately.</p></div></div>
+          <blockquote>Sepolia is used as a live Ethereum testnet comparison, not as a claim about exact Ethereum Mainnet throughput.</blockquote>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer shell"><div class="brand"><span class="brand-mark"><i></i><i></i><i></i></span><span>PASSKEY <b>CLOB</b></span></div><p>On-chain market infrastructure · Built for Monad</p><span>LIVE DEMO · 4 MAKERS / 16 TX</span></footer>
+  </body>
+</html>

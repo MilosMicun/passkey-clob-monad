@@ -29,6 +29,8 @@ import { MONAD_DEPLOYMENT, SEPOLIA_DEPLOYMENT } from './deployments.mjs'
 const BUY = 0
 const SELL = 1
 const GAS_LIMIT = 500_000n
+const RPC_RETRY_COUNT = 8
+const RPC_RETRY_DELAY_MS = 150
 const REQUEST_DELAY_MS = 175
 const RECEIPT_POLLING_INTERVAL_MS = 1_000
 const RECEIPT_TIMEOUT_MS = 600_000
@@ -67,7 +69,34 @@ function deriveOrderId(maker, nonce) {
   return keccak256(encodeAbiParameters(ORDER_ID_PARAMETERS, [maker, nonce]))
 }
 
-async function loadMakers() {
+function parseArguments(arguments_) {
+  const [network, ...options] = arguments_
+  if (!networks[network]) {
+    throw new Error('Usage: node src/benchmark.mjs <sepolia|monad> [--maker-count N]')
+  }
+
+  let selectedMakerCount = MAKER_COUNT
+  let makerCountProvided = false
+  for (let index = 0; index < options.length; index += 1) {
+    if (options[index] !== '--maker-count' || index + 1 >= options.length) {
+      throw new Error('Usage: node src/benchmark.mjs <sepolia|monad> [--maker-count N]')
+    }
+    if (makerCountProvided) throw new Error('--maker-count may only be provided once')
+    makerCountProvided = true
+
+    const value = options[index + 1]
+    if (!/^[1-9][0-9]*$/.test(value)) throw new Error('--maker-count must be a positive integer')
+    selectedMakerCount = Number(value)
+    if (!Number.isSafeInteger(selectedMakerCount) || selectedMakerCount > MAKER_COUNT) {
+      throw new Error(`--maker-count must be between 1 and ${MAKER_COUNT}`)
+    }
+    index += 1
+  }
+
+  return { network, selectedMakerCount }
+}
+
+async function loadMakers(selectedMakerCount) {
   const walletFile = new URL('../.wallets.json', import.meta.url)
   const walletData = JSON.parse(await readFile(walletFile, 'utf8'))
 
@@ -75,13 +104,15 @@ async function loadMakers() {
     throw new Error(`Expected exactly ${MAKER_COUNT} makers in benchmark/.wallets.json`)
   }
 
-  return walletData.makers.map((maker) => {
-    const account = privateKeyToAccount(maker.privateKey)
-    if (account.address !== getAddress(maker.address)) {
-      throw new Error(`Wallet address does not match its private key: ${maker.address}`)
-    }
-    return account
-  })
+  return walletData.makers
+    .slice(0, selectedMakerCount)
+    .map((maker) => {
+      const account = privateKeyToAccount(maker.privateKey)
+      if (account.address !== getAddress(maker.address)) {
+        throw new Error(`Wallet address does not match its private key: ${maker.address}`)
+      }
+      return account
+    })
 }
 
 function buildActions(maker, side, clobStartNonce) {
@@ -143,7 +174,10 @@ async function submitLane(config, rpcUrl, gasPrice, preparation, benchmarkStart)
   const walletClient = createWalletClient({
     account: preparation.account,
     chain: config.chain,
-    transport: http(rpcUrl),
+    transport: http(rpcUrl, {
+      retryCount: RPC_RETRY_COUNT,
+      retryDelay: RPC_RETRY_DELAY_MS,
+    }),
   })
   const side = preparation.makerIndex % 2 === 0 ? SELL : BUY
   const actions = buildActions(preparation.account.address, side, preparation.clobStartNonce)
@@ -257,11 +291,9 @@ async function writeResult(network, result) {
 }
 
 async function main() {
-  const network = process.argv[2]
+  const { network, selectedMakerCount } = parseArguments(process.argv.slice(2))
   const config = networks[network]
-  if (!config) {
-    throw new Error('Usage: node src/benchmark.mjs <sepolia|monad>')
-  }
+  const selectedTotalTransactions = selectedMakerCount * ACTIONS_PER_MAKER
 
   const rpcUrl = process.env[config.rpcEnv]
   if (!rpcUrl) {
@@ -281,6 +313,8 @@ async function main() {
     chain: config.chain,
     pollingInterval: RECEIPT_POLLING_INTERVAL_MS,
     transport: http(rpcUrl, {
+      retryCount: RPC_RETRY_COUNT,
+      retryDelay: RPC_RETRY_DELAY_MS,
       batch: {
         batchSize: 100,
         wait: 10,
@@ -296,7 +330,7 @@ async function main() {
   }
 
   await sleep(REQUEST_DELAY_MS)
-  const makers = await loadMakers()
+  const makers = await loadMakers(selectedMakerCount)
   const preparations = await prepareMakers(publicClient, makers, config.deployment.clob)
   const gasPrice = await publicClient.getGasPrice()
 
@@ -355,8 +389,10 @@ async function main() {
     network,
     chainId: config.deployment.chainId,
     clobAddress: config.deployment.clob,
-    makerCount: MAKER_COUNT,
-    transactionsExpected: TOTAL_WORKLOAD_TX,
+    makerCount: selectedMakerCount,
+    actionsPerMaker: ACTIONS_PER_MAKER,
+    totalTransactions: selectedTotalTransactions,
+    transactionsExpected: selectedTotalTransactions,
     transactionsSubmitted: submittedTransactions.length,
     successfulTx,
     failedTx,
@@ -389,10 +425,12 @@ async function main() {
   await verifyPostBenchmark(publicClient, config.deployment.clob, preparations)
 
   console.log(`NETWORK: ${network}`)
-  console.log(`MAKERS: ${MAKER_COUNT}`)
+  console.log(`MAKERS: ${selectedMakerCount}`)
   console.log(`TX: ${submittedTransactions.length}`)
   console.log(`SUCCESS: ${successfulTx}`)
   console.log(`FAILED: ${failedTx}`)
+  console.log(`RPC TRANSPORT RETRIES: ${RPC_RETRY_COUNT}`)
+  console.log(`RPC RETRY BASE DELAY: ${RPC_RETRY_DELAY_MS} ms`)
   console.log('')
   console.log(`SUBMISSION: ${round(submissionDurationMs)} ms`)
   console.log(`COMPLETION: ${round(completionDurationMs)} ms`)

@@ -1,0 +1,52 @@
+{
+  "source": "live benchmark run",
+  "workload": {
+    "makers": 16,
+    "transactions": 64,
+    "actionsPerMaker": 4,
+    "sequence": ["place", "replace", "replace", "cancel"]
+  },
+  "chains": {
+    "monad": {
+      "name": "Monad Testnet",
+      "chainId": 10143,
+      "makers": 16,
+      "tx": 64,
+      "success": 64,
+      "failed": 0,
+      "submissionDurationMs": 755.71,
+      "completionDurationMs": 952.38,
+      "throughputTxPerSecond": 67.2,
+      "p50LatencyMs": 483.32,
+      "p95LatencyMs": 850.82,
+      "firstBlock": 55948288,
+      "lastBlock": 55948290,
+      "blockSpan": 3,
+      "onChainWindowSeconds": 1,
+      "clob": "0x9D20056D8c86e83E06047875D0E016DAA9F4e48D"
+    },
+    "sepolia": {
+      "name": "Ethereum Sepolia",
+      "chainId": 11155111,
+      "makers": 16,
+      "tx": 64,
+      "success": 64,
+      "failed": 0,
+      "submissionDurationMs": 519.47,
+      "completionDurationMs": 10171.63,
+      "throughputTxPerSecond": 6.29,
+      "p50LatencyMs": 9895.09,
+      "p95LatencyMs": 10167.54,
+      "firstBlock": 11543333,
+      "lastBlock": 11543333,
+      "blockSpan": 1,
+      "onChainWindowSeconds": 0,
+      "clob": "0x026eb6Ce781fe0543e9f0e7b651eb7350baCae9B"
+    }
+  },
+  "comparisons": {
+    "completionSpeedup": 10.680222180222179,
+    "throughputMultiple": 10.683624801271861,
+    "p50LatencyMultiple": 20.473164776959365
+  }
+}

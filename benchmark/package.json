@@ -8,7 +8,8 @@
     "preflight": "node src/preflight.mjs",
     "setup": "node src/setup.mjs",
     "verify-setup": "node src/verify-setup.mjs",
-    "bench": "node src/benchmark.mjs"
+    "bench": "node src/benchmark.mjs",
+    "demo": "node src/demo-server.mjs"
   },
   "dependencies": {
     "viem": "^2.55.19"
