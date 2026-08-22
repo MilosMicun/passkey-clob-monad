@@ -7,7 +7,8 @@
     "wallets": "node src/generate-wallets.mjs",
     "preflight": "node src/preflight.mjs",
     "setup": "node src/setup.mjs",
-    "verify-setup": "node src/verify-setup.mjs"
+    "verify-setup": "node src/verify-setup.mjs",
+    "bench": "node src/benchmark.mjs"
   },
   "dependencies": {
     "viem": "^2.55.19"
