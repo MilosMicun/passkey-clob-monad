@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <script src="./app.js" defer></script>
   </head>
-  <body data-chain="monad">
+  <body data-chain="monad" data-runtime-mode="detecting">
     <div class="ambient ambient-one" aria-hidden="true"></div>
     <div class="ambient ambient-two" aria-hidden="true"></div>
 
@@ -28,9 +28,16 @@
       </nav>
       <div class="header-status">
         <span class="status-dot" aria-hidden="true"></span>
-        LIVE TESTNET
+        <span id="runtime-status-label">LIVE TESTNET</span>
       </div>
     </header>
+
+    <aside class="public-showcase-banner" id="public-showcase-banner" aria-label="Public showcase mode" hidden>
+      <div class="shell">
+        <strong>PUBLIC SHOWCASE</strong>
+        <p>Interactive passkey signing and the live dual-chain benchmark run locally during the demo. This public deployment presents the verified on-chain results, architecture, and deployed contracts.</p>
+      </div>
+    </aside>
 
     <main id="top">
       <section class="hero shell" aria-labelledby="hero-title">
@@ -52,7 +59,8 @@
             <div><b>16</b><span>real on-chain tx</span></div>
           </div>
           <p class="maker-race-context">Market makers earn spread by keeping two-sided quotes near fair value. This race measures how quickly they can refresh those quotes on-chain.</p>
-          <button class="run-comparison-button" id="run-live-comparison" type="button">RUN LIVE COMPARISON</button>
+          <button class="run-comparison-button" id="run-live-comparison" type="button" disabled>RUN LIVE COMPARISON</button>
+          <p class="public-control-note">LIVE DURING PRESENTATION</p>
           <p class="live-rpc-note">Live demo uses 4 concurrent makers to stay within public RPC burst limits.</p>
           <p class="live-run-message" id="live-run-message" role="status" aria-live="polite">Both networks are ready. The verified snapshot below remains visible during a live run.</p>
         </div>
@@ -212,8 +220,9 @@
               <div><span>makerNonce</span><b id="demo-maker-nonce">—</b></div>
             </div>
             <p class="passkey-progress" id="passkey-progress" role="status" aria-live="polite">Connect to the local demo server to begin.</p>
+            <p class="public-control-note passkey-public-note">DEVICE PASSKEY DEMO RUNS LOCALLY</p>
             <div class="passkey-actions">
-              <button id="create-passkey-button" type="button">CREATE DEVICE PASSKEY</button>
+              <button id="create-passkey-button" type="button" disabled>CREATE DEVICE PASSKEY</button>
               <button id="place-passkey-button" type="button" disabled>PLACE ORDER WITH PASSKEY</button>
               <button id="cancel-passkey-button" type="button" hidden disabled>CANCEL DEMO ORDER WITH PASSKEY</button>
             </div>
