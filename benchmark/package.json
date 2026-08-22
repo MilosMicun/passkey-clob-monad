@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "probe": "node src/probe.mjs",
-    "wallets": "node src/generate-wallets.mjs"
+    "wallets": "node src/generate-wallets.mjs",
+    "preflight": "node src/preflight.mjs",
+    "setup": "node src/setup.mjs"
   },
   "dependencies": {
     "viem": "^2.55.19"
